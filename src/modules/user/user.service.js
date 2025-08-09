@@ -4,7 +4,7 @@ import joi from "joi";
 import bycrpt from "bcrypt";
 
 export const deleteAccount = async (req, res) => {
-    try {
+    
         const deletedUser = await User.findByIdAndDelete(req.user._id);
 
         if (!deletedUser) {
@@ -12,9 +12,7 @@ export const deleteAccount = async (req, res) => {
         }
 
         return res.status(200).json({ message: "User deleted successfully", success: true });
-    } catch (error) {
-        return res.status(error.cause || 500).json({ message: error.message, success: false });
-    }
+    
 }
 
 export const uploadProfilePicture = async (req, res) => {
@@ -30,23 +28,23 @@ export const uploadProfilePicture = async (req, res) => {
 }
 
 export const updatePassword = async (req, res) => {
-    const { password } = req.body;
+    const { oldPassword, newPassword } = req.body;
 
-    const match = bycrpt.compareSync(password, req.user.password);
+    const match = bycrpt.compareSync(oldPassword, req.user.password);
 
     if (!match) {
         throw new Error("Invalid password", { cause: 401 });
     }
 const schema = joi.object({
-    password: joi.string()
+    newPassword: joi.string()
         .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/)
         .required(),
 })
-    const { error, value } = schema.validate({ password });
+    const { error, value } = schema.validate({ newPassword });
     if (error) {
         throw new Error(error.details[0].message, { cause: 400 });
     }
-    const updatedUser = await User.findByIdAndUpdate(req.user._id, { password: bycrpt.hashSync(password, 10) }, { new: true });
+    const updatedUser = await User.findByIdAndUpdate(req.user._id, { password: bycrpt.hashSync(value.newPassword, 10) }, { new: true });
 
     if (!updatedUser) {
         throw new Error("User not found", { cause: 404 });

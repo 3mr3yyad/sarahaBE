@@ -6,8 +6,8 @@ import { registerSchema, loginSchema } from "./auth.validation.js";
 const router = Router();
 
 router.post("/register",validation(registerSchema), authServices.register);
-router.post("/login", validation(loginSchema), authServices.login);
 router.post("/verify-email", authServices.verifyEmail);
+router.post("/login", validation(loginSchema), authServices.login);
 router.post("/resend-otp", authServices.resendOtp);
 router.post("/google-login", authServices.googleLogin)
 router.patch("/forgot-password", authServices.forgotPassword);

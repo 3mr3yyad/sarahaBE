@@ -5,6 +5,7 @@ import { generateOtp } from "../../utils/otp/index.js";
 import { OAuth2Client } from "google-auth-library";
 import jwt from "jsonwebtoken";
 import { updatePassword } from "../user/user.service.js";
+import { refreshToken } from "../../utils/token/index.js";
 
 
 export const register = async (req, res) => {
@@ -19,14 +20,14 @@ export const register = async (req, res) => {
     const userExists = await User.findOne({
             $or: [{
                 $and: [
-                    { email: { $exists: true } },
                     { email: { $ne: null } },
+                    { email: { $exists: true } },
                     { email: email }
                 ]
             },
             { $and: [
-                { phoneNumber: { $exists: true } },
                 { phoneNumber: { $ne: null } },
+                { phoneNumber: { $exists: true } },
                 { phoneNumber: phoneNumber }
             ] }
         ]
@@ -182,14 +183,14 @@ export const login = async (req, res) => {
             throw new Error("Invalid credentials", { cause: 401 });
         }
     const token = jwt.sign({ id: userExists._id, name: userExists.fullName }, "3yyad-saraha-secret-key", { expiresIn: "15m" })
-    const refreshToken = refreshToken(userExists._id)
+    const newRefreshToken = refreshToken(userExists._id)
     const refreshTokenExpiry = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
-    userExists.refreshToken = refreshToken;
-    userExists.refreshTokenExpiry = refreshTokenExpiry;
+    userExists.refreshToken = newRefreshToken;
+    userExists.refreshTokenExpiry = refreshTokenExpiry; 
     await userExists.save()
 
 
-        return res.status(200).json({ message: "User logged in successfully", success: true, token, refreshToken });
+        return res.status(200).json({ message: "User logged in successfully", success: true, token, refreshToken: newRefreshToken });
 
 }
 
