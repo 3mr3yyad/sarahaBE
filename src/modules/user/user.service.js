@@ -2,6 +2,7 @@ import { User } from "../../DB/model/user.model.js";
 import fs from "node:fs";
 import joi from "joi";
 import bycrpt from "bcrypt";
+import cloudinary from "../../utils/cloud/cloudinary.config.js";
 
 export const deleteAccount = async (req, res) => {
     
@@ -15,17 +16,19 @@ export const deleteAccount = async (req, res) => {
     
 }
 
-export const uploadProfilePicture = async (req, res) => {
-    if (req.user.profilePicture) {
-        fs.unlinkSync(req.user.profilePicture);
-    }
-    const updatedUser = await User.findByIdAndUpdate(req.user._id, { profilePicture: req.file.path }, { new: true });
+// if storing is local
 
-    if (!updatedUser) {
-        throw new Error("User not found", { cause: 404 });
-    }
-    return res.status(200).json({ message: "Profile picture uploaded successfully", file: req.file, success: true });
-}
+// export const uploadProfilePicture = async (req, res) => {
+//     if (req.user.profilePicture) {
+//         fs.unlinkSync(req.user.profilePicture);
+//     }
+//     const updatedUser = await User.findByIdAndUpdate(req.user._id, { profilePicture: req.file.path }, { new: true });
+
+//     if (!updatedUser) {
+//         throw new Error("User not found", { cause: 404 });
+//     }
+//     return res.status(200).json({ message: "Profile picture uploaded successfully", file: req.file, success: true });
+// }
 
 export const updatePassword = async (req, res) => {
     const { oldPassword, newPassword } = req.body;
@@ -51,5 +54,32 @@ const schema = joi.object({
     }
     return res.status(200).json({ message: "Password updated successfully", success: true });
 }
+
+export const uploadProfileCloud = async (req, res) => {
+    const user = req.user;
+    const file = req.file;
+    const { secure_url, public_id } = await cloudinary.uploader.upload(file.path,
+        {
+            folder: `saraha/users/${user._id}/profile-picture`
+        });
+    if (!secure_url || !public_id) {
+        throw new Error("Failed to upload image", { cause: 500 });
+    }
+    if(user.profilePicture.public_id){
+        await cloudinary.uploader.destroy(user.profilePicture.public_id);
+    }
+    await User.updateOne(
+        { _id: user._id },
+        { profilePicture: { secure_url, public_id } }
+    );
+    return res.status(200).json(
+        {
+            message: "Profile picture uploaded successfully",
+            file: { secure_url, public_id },
+            success: true
+        });
+}
+
+
 
 

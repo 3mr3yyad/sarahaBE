@@ -53,7 +53,8 @@ const schema = new Schema({
         default: "local"
     },
     profilePicture: {
-        type: String,
+        secure_url: String,
+        public_id: String,
     },
     refreshToken: {
         type: String,

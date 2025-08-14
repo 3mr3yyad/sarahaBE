@@ -115,7 +115,7 @@ export const googleLogin = async (req, res) => {
     
         const { idToken } = req.body;
 
-        const client = new OAuth2Client("386337795399-88fvecpd58rbl01eq8btfdfsaebcimqg.apps.googleusercontent.com");
+        const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
         const ticket = await client.verifyIdToken({idToken})
 
@@ -138,7 +138,7 @@ export const googleLogin = async (req, res) => {
             await userExists.save()
         }
 
-    const token = jwt.sign({ id: userExists._id, name: userExists.fullName }, "3yyad-saraha-secret-key", { expiresIn: "15m" })
+    const token = jwt.sign({ id: userExists._id, name: userExists.fullName }, process.env.SECRET_KEY, { expiresIn: "15m" })
     const refreshToken = refreshToken(userExists._id)
     const refreshTokenExpiry = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
     userExists.refreshToken = refreshToken;
@@ -182,7 +182,7 @@ export const login = async (req, res) => {
         if (!match) {
             throw new Error("Invalid credentials", { cause: 401 });
         }
-    const token = jwt.sign({ id: userExists._id, name: userExists.fullName }, "3yyad-saraha-secret-key", { expiresIn: "15m" })
+    const token = jwt.sign({ id: userExists._id, name: userExists.fullName }, process.env.SECRET_KEY, { expiresIn: "15m" })
     const newRefreshToken = refreshToken(userExists._id)
     const refreshTokenExpiry = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
     userExists.refreshToken = newRefreshToken;
