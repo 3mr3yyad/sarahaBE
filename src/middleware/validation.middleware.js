@@ -1,3 +1,5 @@
+import joi from "joi";
+
 export const validation = (schema) => {
 
     return (req, res, next) => {
@@ -13,3 +15,19 @@ export const validation = (schema) => {
         next();
     }
 }
+
+export const genralFields = {
+    email: joi.string().email(),
+
+    phoneNumber: joi.string().length(11),
+
+    password: joi.string()
+        .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,30}$/),
+
+    name: joi.string().min(3).max(30),
+
+    dob: joi.date(),
+
+    otp: joi.string().length(5)
+}
+

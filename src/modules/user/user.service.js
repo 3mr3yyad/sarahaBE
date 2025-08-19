@@ -6,7 +6,11 @@ import cloudinary from "../../utils/cloud/cloudinary.config.js";
 
 export const deleteAccount = async (req, res) => {
     
-        const deletedUser = await User.findByIdAndDelete(req.user._id);
+    const deletedUser = await User.findByIdAndDelete({ _id: req.user._id });
+    
+    if(deletedUser.profilePicture.public_id){
+        await cloudinary.api.delete_resources_by_prefix(`saraha/users/${req.user._id}`);
+    }
 
         if (!deletedUser) {
             throw new Error("User not found", { cause: 404 });

@@ -1,26 +1,25 @@
 import joi from "joi";
+import { genralFields } from "../../middleware/validation.middleware.js";
 
 export const registerSchema = joi.object({
-    fullName: joi.string()
-        .min(3)
-        .max(30)
-        .required(),
-    email: joi.string()
-        .email(),
-    phoneNumber: joi.string()
-        .length(11),
-    password: joi.string()
-        .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/)
-        .required(),
-    dob: joi.date()
+    fullName: genralFields.name.required(),
+    email: genralFields.email.required(),
+    phoneNumber: genralFields.phoneNumber,
+    password: genralFields.password.required(),
+    dob: genralFields.dob
 }).or("email", "phoneNumber");
 
 export const loginSchema = joi.object({
-    email: joi.string()
-        .email(),
-    phoneNumber: joi.string()
-    .length(11),
-    password: joi.string()
-        .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/)
+    email: genralFields.email,
+    phoneNumber: genralFields.phoneNumber,
+    password: genralFields.password
         .required()
 }).or("email", "phoneNumber");
+
+export const forgotPasswordSchema = joi.object({
+    email: genralFields.email.required(),
+    otp: genralFields.otp.required(),
+    newPassword: genralFields.password.required(),
+    confirmPassword: genralFields.password.required()
+        .valid(joi.ref("newPassword"))
+})

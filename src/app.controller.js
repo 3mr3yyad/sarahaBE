@@ -1,6 +1,7 @@
 import { connectDB } from "./DB/connection.js";
 import { authRouter, userRouter, messageRouter } from "./modules/index.js";
 import cors from "cors";
+import { globalErrorHandler } from "./utils/error/index.js";
 
 export function bootStrap(app, express) {
     app.use(express.json());
@@ -19,9 +20,6 @@ export function bootStrap(app, express) {
     app.use("/message", messageRouter)
 
 
-    app.use((err, req,res,next)=>{
-        return res.status(err.cause || 500)
-        .json({ message: err.message, success: false, stack: err.stack });
-    })
+    app.use(globalErrorHandler)
     connectDB()
 }

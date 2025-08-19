@@ -1,11 +1,12 @@
 import { User } from "../../DB/model/user.model.js";
-import bycrpt from "bcrypt";
 import { sendEmail } from "../../utils/email/index.js";
 import { generateOtp } from "../../utils/otp/index.js";
 import { OAuth2Client } from "google-auth-library";
 import jwt from "jsonwebtoken";
-import { updatePassword } from "../user/user.service.js";
-import { refreshToken } from "../../utils/token/index.js";
+import { generateToken, refreshToken } from "../../utils/token/index.js";
+import { registerSchema } from "./auth.validation.js";
+import { comparePassword, hashPassword } from "../../utils/hashing/index.js";
+import { Token } from "../../DB/model/token.modle.js";
 
 
 export const register = async (req, res) => {
@@ -40,7 +41,7 @@ export const register = async (req, res) => {
         const user = new User({
             fullName,
             email,
-            password: bycrpt.hashSync(password, 10),
+            password: hashPassword(password),
             phoneNumber,
             dob
         })
@@ -90,24 +91,28 @@ export const verifyEmail = async (req, res) => {
 
     }
 
-export const resendOtp = async (req, res) => {
+export const sendOtp = async (req, res) => {
     
         const { email } = req.body;
 
         const { otp, otpExpiry } = generateOtp(3)
 
-        await User.updateOne({ email }, { otp, otpExpiry })
+    const userExists = await User.findOneAndUpdate({ email }, { otp, otpExpiry })
+
+    if (!userExists) {
+        throw new Error("User not found", { cause: 404 });
+    }
 
         await sendEmail({
             to: email,
-            subject: "resent OTP",
+            subject: "New OTP",
             html:`<h1>Welcome to Saraha</h1>
             <p>Your new confirmation -otp- code is: <b><mark>${otp}</mark></b></p>
             <p><em>OTP will expire in <strong>3 minutes</strong></em></p>`
             })
 
 
-        return res.status(200).json({ message: "OTP resent successfully", success: true });
+        return res.status(200).json({ message: "OTP sent successfully", success: true });
 
     }
 
@@ -177,52 +182,34 @@ export const login = async (req, res) => {
         throw new Error("Please verify your email", { cause: 401 });
     }
 
-        const match = bycrpt.compareSync(password, userExists.password);
+        const match = comparePassword(password, userExists.password);
 
         if (!match) {
             throw new Error("Invalid credentials", { cause: 401 });
         }
-    const token = jwt.sign({ id: userExists._id, name: userExists.fullName }, process.env.SECRET_KEY, { expiresIn: "15m" })
-    const newRefreshToken = refreshToken(userExists._id)
-    const refreshTokenExpiry = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
-    userExists.refreshToken = newRefreshToken;
+    const accessToken = generateToken({ payload: { id: userExists._id, name: userExists.fullName } })
+    const refreshToken = generateToken({ payload: { id: userExists._id, name: userExists.fullName }, type: "refresh" }, { expiresIn: "7d" })
+
+    await Token.create({ token: refreshToken, userId: userExists._id, type: "refresh" })
+    const refreshTokenExpiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+    userExists.refreshToken = refreshToken;
     userExists.refreshTokenExpiry = refreshTokenExpiry; 
     await userExists.save()
 
 
-        return res.status(200).json({ message: "User logged in successfully", success: true, token, refreshToken: newRefreshToken });
+        return res.status(200).json({ message: "User logged in successfully", success: true, accessToken, refreshToken });
 
 }
 
 export const forgotPassword = async (req, res) => {
-    const { email } = req.body;
+    const { email, otp, newPassword } = req.body;
     const userExists = await User.findOne({ email });
-    if (!userExists) {
-        throw new Error("User not found", { cause: 404 });
-    }
-    const { otp, otpExpiry } = generateOtp(5)
-    userExists.otp = otp;
-    userExists.otpExpiry = otpExpiry;
-    await userExists.save()
-    await sendEmail({
-        to: email,
-        subject: "Forgot Password",
-        html: `<h1>Welcome to Saraha</h1>
-        <p>Your confirmation -otp- code is: <b><mark>${otp}</mark></b></p>
-        <p><em>OTP will expire in <strong>5 minutes</strong></em></p>`
-    })
-    return res.status(200).json({ message: `OTP sent to ${email}`, success: true });
-}
 
-export const resetPassword = async (req, res) => {
-    const { otp, password } = req.body;
-    const userExists = await User.findOne({ otp });
     if (!userExists) {
         throw new Error("User not found", { cause: 404 });
     }
 
-    const otpMatch = bycrpt.compareSync(otp, userExists.otp);
-    if (!otpMatch) {
+    if (userExists.otp != otp) {
         throw new Error("Invalid OTP", { cause: 401 });
     }
 
@@ -230,10 +217,18 @@ export const resetPassword = async (req, res) => {
         throw new Error("OTP expired", { cause: 401 });
     }
 
-    updatePassword(req, res);
+    userExists.password = hashPassword(newPassword);
     userExists.otp = undefined;
     userExists.otpExpiry = undefined;
     await userExists.save()
+
+    return res.status(201).json({ message: `Password reset successfully`, success: true });
+}
+
+export const logout = async (req, res) => {
+    const token = req.headers.authorization;
+
+    await Token.create({ token,userId: req.user._id });
     
-    return res.status(200).json({ message: `Password reset successfully`, success: true });
+    return res.status(200).json({ message: "User logged out successfully", success: true });
 }
