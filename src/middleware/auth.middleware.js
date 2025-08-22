@@ -20,6 +20,9 @@ export const isAuthenticated = async (req, res, next) => {
     if(!userExists){
         return next(new Error("User not found", { cause: 404 }));
     }
+    if(userExists.credentialsUpdatedAt > new Date(payload.iat * 1000)){
+        throw new Error("token expired", { cause: 401 });
+    }
     req.user = userExists;
-    next();
+    return next();
 }

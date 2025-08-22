@@ -7,14 +7,14 @@ export const registerSchema = joi.object({
     phoneNumber: genralFields.phoneNumber,
     password: genralFields.password.required(),
     dob: genralFields.dob
-}).or("email", "phoneNumber");
+}).or("email", "phoneNumber").required();
 
 export const loginSchema = joi.object({
     email: genralFields.email,
     phoneNumber: genralFields.phoneNumber,
     password: genralFields.password
         .required()
-}).or("email", "phoneNumber");
+}).or("email", "phoneNumber").required();
 
 export const forgotPasswordSchema = joi.object({
     email: genralFields.email.required(),
@@ -22,4 +22,4 @@ export const forgotPasswordSchema = joi.object({
     newPassword: genralFields.password.required(),
     confirmPassword: genralFields.password.required()
         .valid(joi.ref("newPassword"))
-})
+}).required();

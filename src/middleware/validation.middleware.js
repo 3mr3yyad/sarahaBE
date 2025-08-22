@@ -3,8 +3,8 @@ import joi from "joi";
 export const validation = (schema) => {
 
     return (req, res, next) => {
-
-        const { value, error } = schema.validate(req.body, { abortEarly: false });
+        let data = { ...req.body, ...req.params };
+        const { value, error } = schema.validate(data, { abortEarly: false });
 
         if (error) {
             let errorMessages = error.details.map((error) => error.message).join("\n");
@@ -28,6 +28,8 @@ export const genralFields = {
 
     dob: joi.date(),
 
-    otp: joi.string().length(5)
+    otp: joi.string().length(5),
+
+    objectid: joi.string().hex().length(24)
 }
 

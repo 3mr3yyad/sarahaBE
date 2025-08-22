@@ -1,8 +1,7 @@
 import { Router } from "express";
 import * as userServices from "./user.service.js";
-import { uploadFile } from "../../utils/multer/multer.local.js";
 import { fileValidation } from "../../middleware/file-validation.middleware.js";
-import { isAuthenticated } from "../../middleware/auth-middleware.js";
+import { isAuthenticated } from "../../middleware/auth.middleware.js";
 import { uploadFile as uploadCloud } from "../../utils/multer/multer.cloud.js";
 
 const router = Router();

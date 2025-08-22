@@ -3,8 +3,7 @@ import { sendEmail } from "../../utils/email/index.js";
 import { generateOtp } from "../../utils/otp/index.js";
 import { OAuth2Client } from "google-auth-library";
 import jwt from "jsonwebtoken";
-import { generateToken, refreshToken } from "../../utils/token/index.js";
-import { registerSchema } from "./auth.validation.js";
+import { generateToken } from "../../utils/token/index.js";
 import { comparePassword, hashPassword } from "../../utils/hashing/index.js";
 import { Token } from "../../DB/model/token.modle.js";
 
@@ -220,7 +219,11 @@ export const forgotPassword = async (req, res) => {
     userExists.password = hashPassword(newPassword);
     userExists.otp = undefined;
     userExists.otpExpiry = undefined;
+    userExists.credentialsUpdatedAt = Date.now();
+    
     await userExists.save()
+
+    await Token.deleteMany({userId: userExists._id, type: "refresh"})
 
     return res.status(201).json({ message: `Password reset successfully`, success: true });
 }

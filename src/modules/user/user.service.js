@@ -1,15 +1,14 @@
 import { User } from "../../DB/model/user.model.js";
-import fs from "node:fs";
 import joi from "joi";
 import bycrpt from "bcrypt";
-import cloudinary from "../../utils/cloud/cloudinary.config.js";
+import { uploadFile, deleteFile } from "../../utils/cloud/cloudinary.config.js";
 
 export const deleteAccount = async (req, res) => {
     
     const deletedUser = await User.findByIdAndDelete({ _id: req.user._id });
     
     if(deletedUser.profilePicture.public_id){
-        await cloudinary.api.delete_resources_by_prefix(`saraha/users/${req.user._id}`);
+        await deleteFile(`saraha/users/${req.user._id}`);
     }
 
         if (!deletedUser) {
@@ -43,9 +42,7 @@ export const updatePassword = async (req, res) => {
         throw new Error("Invalid password", { cause: 401 });
     }
 const schema = joi.object({
-    newPassword: joi.string()
-        .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/)
-        .required(),
+    newPassword: genralFields.password.required(),
 })
     const { error, value } = schema.validate({ newPassword });
     if (error) {
@@ -62,10 +59,12 @@ const schema = joi.object({
 export const uploadProfileCloud = async (req, res) => {
     const user = req.user;
     const file = req.file;
-    const { secure_url, public_id } = await cloudinary.uploader.upload(file.path,
-        {
-            folder: `saraha/users/${user._id}/profile-picture`
-        });
+
+    const { secure_url, public_id } = await uploadFile({
+        file: file.path,
+        options: {folder: `saraha/users/${user._id}/profile-picture`}
+    })
+    
     if (!secure_url || !public_id) {
         throw new Error("Failed to upload image", { cause: 500 });
     }

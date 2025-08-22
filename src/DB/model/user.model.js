@@ -56,11 +56,9 @@ const schema = new Schema({
         secure_url: String,
         public_id: String,
     },
-    refreshToken: {
-        type: String,
-    },
-    refreshTokenExpiry: {
+    credentialsUpdatedAt: {
         type: Date,
+        default: Date.now()
     }
 }, {
     timestamps: true,
