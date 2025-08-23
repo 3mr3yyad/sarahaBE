@@ -80,7 +80,8 @@ export const uploadProfileCloud = async (req, res) => {
 
 export const getProfile = async (req, res) => {
     const user = req.user;
-    const result = await User.findOne({ _id: user._id }, { password: undefined }, {populate: [{path: "messages"}]});
+    console.log(user);
+    const result = await User.findOne({ _id: user.id }, { "password": 0 }, { populate: [{ path: "messages" }] });
     return res.status(200).json({ result, success: true });
 }
 

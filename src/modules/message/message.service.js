@@ -38,10 +38,12 @@ export const getMessage = async (req, res) => {
                 select: "_id fullName profilePicture"
             }]
         });
+    
 
     if (!message) {
         throw new Error("Message not found", { cause: 404 });
     }
+    console.log(message);
 
-    return res.status(200).json({ message, success: true });
+    return res.status(200).json({data: message, success: true });
 }
