@@ -2,18 +2,13 @@ import { User } from "../../DB/model/user.model.js";
 import joi from "joi";
 import bycrpt from "bcrypt";
 import { uploadFile, deleteFile } from "../../utils/cloud/cloudinary.config.js";
+import { Token } from "../../DB/model/token.modle.js";
 
 export const deleteAccount = async (req, res) => {
     
-    const deletedUser = await User.findByIdAndDelete({ _id: req.user._id });
-    
-    if(deletedUser.profilePicture.public_id){
-        await deleteFile(`saraha/users/${req.user._id}`);
-    }
+    await User.updateOne({ _id: req.user._id }, { deletedAt: Date.now(), credentialsUpdatedAt: Date.now() });
 
-        if (!deletedUser) {
-            throw new Error("User not found", { cause: 404 });
-        }
+    await Token.deleteMany({userId: req.user._id})
 
         return res.status(200).json({ message: "User deleted successfully", success: true });
     
@@ -83,6 +78,10 @@ export const uploadProfileCloud = async (req, res) => {
         });
 }
 
-
+export const getProfile = async (req, res) => {
+    const user = req.user;
+    const result = await User.findOne({ _id: user._id }, { password: undefined }, {populate: [{path: "messages"}]});
+    return res.status(200).json({ result, success: true });
+}
 
 

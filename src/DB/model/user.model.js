@@ -59,6 +59,9 @@ const schema = new Schema({
     credentialsUpdatedAt: {
         type: Date,
         default: Date.now()
+    },
+    deletedAt: {
+        type: Date
     }
 }, {
     timestamps: true,
@@ -77,6 +80,12 @@ schema.virtual("fullName").set(function(value) {
 
 schema.virtual("age").get(function() {
     return new Date().getFullYear() - this.dob.getFullYear();
+})
+
+schema.virtual("messages", {
+    ref: "Message",
+    localField: "_id",
+    foreignField: "receiver"
 })
 
 export const User = model("User", schema);

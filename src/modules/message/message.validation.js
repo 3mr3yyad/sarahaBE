@@ -6,3 +6,7 @@ export const messageSchema = joi.object({
     receiver: genralFields.objectid.required(),
     sender: genralFields.objectid,
 })
+
+export const getMessageSchema = joi.object({
+    id: genralFields.objectid.required(),
+})

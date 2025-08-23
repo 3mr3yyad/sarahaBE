@@ -19,10 +19,13 @@ router.delete("/", isAuthenticated, userServices.deleteAccount);
 router.patch("/update-password",
     isAuthenticated,
     userServices.updatePassword);
+
 router.post("/upload-profile-picture",
     isAuthenticated,
     uploadCloud().single("profilePicture"),
     fileValidation(), userServices.uploadProfileCloud);
+
+router.get("/", isAuthenticated, userServices.getProfile);
 
 
 export { router as userRouter };

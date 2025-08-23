@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import {MongoClient, ServerApiVersion } from "mongodb";
 
 export const connectDB = () => {
     mongoose.connect(process.env.DB_URL).then(() => {
@@ -7,4 +8,7 @@ export const connectDB = () => {
         console.log("failed to connect to DB", error);
     });
 }
+
+
+
 

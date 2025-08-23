@@ -9,92 +9,94 @@ import { Token } from "../../DB/model/token.modle.js";
 
 
 export const register = async (req, res) => {
-    
+
     const {
-            fullName,
-            email,
-            password,
-            phoneNumber,
-            dob } = req.body;
+        fullName,
+        email,
+        password,
+        phoneNumber,
+        dob } = req.body;
 
     const userExists = await User.findOne({
-            $or: [{
-                $and: [
-                    { email: { $ne: null } },
-                    { email: { $exists: true } },
-                    { email: email }
-                ]
-            },
-            { $and: [
+        $or: [{
+            $and: [
+                { email: { $ne: null } },
+                { email: { $exists: true } },
+                { email: email }
+            ]
+        },
+        {
+            $and: [
                 { phoneNumber: { $ne: null } },
                 { phoneNumber: { $exists: true } },
                 { phoneNumber: phoneNumber }
-            ] }
-        ]
-        })
-
-        if (userExists) {
-            throw new Error("User already exists", { cause: 409 });
+            ]
         }
+        ]
+    })
 
-        const user = new User({
-            fullName,
-            email,
-            password: hashPassword(password),
-            phoneNumber,
-            dob
-        })
+    if (userExists) {
+        throw new Error("User already exists", { cause: 409 });
+    }
 
-        const { otp, otpExpiry } = generateOtp(5)
+    const user = new User({
+        fullName,
+        email,
+        password: hashPassword(password),
+        phoneNumber,
+        dob
+    })
 
-        user.otp = otp;
-        user.otpExpiry = otpExpiry;
+    const { otp, otpExpiry } = generateOtp(5)
 
-        if(email){
-            await sendEmail({
+    user.otp = otp;
+    user.otpExpiry = otpExpiry;
+
+    if (email) {
+        await sendEmail({
             to: email,
             subject: "Verify your email",
-            html:`<h1>Welcome to Saraha</h1>
+            html: `<h1>Welcome to Saraha</h1>
             <p>Your confirmation -otp- code is: <b><mark>${otp}</mark></b></p>
             <p><em>OTP will expire in <strong>5 minutes</strong></em></p>`
-            })
-        }
-
-        await user.save()
-
-        return res.status(201).json({ message: "User created successfully", success: true });
-
+        })
     }
+
+    await user.save()
+
+    return res.status(201).json({ message: "User created successfully", success: true });
+
+}
 
 export const verifyEmail = async (req, res) => {
-    
-        const { otp, email } = req.body;
 
-        const userExists = await User.findOne({
-            email,
-            otp,
-            otpExpiry: { $gt: Date.now() }
-        })
+    const { otp, email } = req.body;
 
-        if (!userExists) {
-            throw new Error("Invalid OTP", { cause: 401 });
-        }
+    const userExists = await User.findOne({
+        email,
+        otp,
+        otpExpiry: { $gt: Date.now() }
+    })
 
-        userExists.isVerified = true;
-        userExists.otp = undefined;
-        userExists.otpExpiry = undefined;
-
-        await userExists.save()
-
-        return res.status(200).json({ message: "Your email verified successfully", success: true });
-
+    if (!userExists) {
+        throw new Error("Invalid OTP", { cause: 401 });
     }
 
-export const sendOtp = async (req, res) => {
-    
-        const { email } = req.body;
+    userExists.isVerified = true;
+    userExists.otp = undefined;
+    userExists.otpExpiry = undefined;
 
-        const { otp, otpExpiry } = generateOtp(3)
+    await userExists.save()
+
+    return res.status(200).json({ message: "Your email verified successfully", success: true });
+
+}
+
+export const sendOtp = async (req, res) => {
+
+    const { email } = req.body;
+
+    const { otp, otpExpiry } = generateOtp(3)
 
     const userExists = await User.findOneAndUpdate({ email }, { otp, otpExpiry })
 
@@ -102,45 +104,51 @@ export const sendOtp = async (req, res) => {
         throw new Error("User not found", { cause: 404 });
     }
 
-        await sendEmail({
-            to: email,
-            subject: "New OTP",
-            html:`<h1>Welcome to Saraha</h1>
+    await sendEmail({
+        to: email,
+        subject: "New OTP",
+        html: `<h1>Welcome to Saraha</h1>
             <p>Your new confirmation -otp- code is: <b><mark>${otp}</mark></b></p>
             <p><em>OTP will expire in <strong>3 minutes</strong></em></p>`
-            })
+    })
 
 
-        return res.status(200).json({ message: "OTP sent successfully", success: true });
+    return res.status(200).json({ message: "OTP sent successfully", success: true });
 
-    }
+}
 
 export const googleLogin = async (req, res) => {
-    
-        const { idToken } = req.body;
 
-        const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+    const { idToken } = req.body;
 
-        const ticket = await client.verifyIdToken({idToken})
+    const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
-        const payload = ticket.getPayload();
+    const ticket = await client.verifyIdToken({ idToken })
 
-        let userExists = await User.findOne({email: payload.email})
+    const payload = ticket.getPayload();
 
-        if(!userExists){
-            userExists = new User({
-                fullName: payload.name,
-                email: payload.email,
-                // password: bycrpt.hashSync(payload.email, 10),
-                phoneNumber: payload.phoneNumber,
-                dob: payload.birthdate,
-                isVerified: true,
-                otp: undefined,
-                otpExpiry: undefined,
-                userAgent: "google"
-            })
-            await userExists.save()
-        }
+    let userExists = await User.findOne({ email: payload.email })
+
+    if (!userExists) {
+        userExists = new User({
+            fullName: payload.name,
+            email: payload.email,
+            // password: bycrpt.hashSync(payload.email, 10),
+            phoneNumber: payload.phoneNumber,
+            dob: payload.birthdate,
+            isVerified: true,
+            otp: undefined,
+            otpExpiry: undefined,
+            userAgent: "google"
+        })
+        await userExists.save()
+    }
+
+    if (userExists.deletedAt) {
+        userExists.deletedAt = undefined;
+        userExists.credentialsUpdatedAt = Date.now();
+        await userExists.save();
+    }
 
     const token = jwt.sign({ id: userExists._id, name: userExists.fullName }, process.env.SECRET_KEY, { expiresIn: "15m" })
     const refreshToken = refreshToken(userExists._id)
@@ -149,54 +157,62 @@ export const googleLogin = async (req, res) => {
     userExists.refreshTokenExpiry = refreshTokenExpiry;
     await userExists.save()
 
-        return res.status(200).json({ message: "User logged in successfully", success: true, user: userExists, token, refreshToken });
+    return res.status(200).json({ message: "User logged in successfully", success: true, user: userExists, token, refreshToken });
 
-    }
+}
 
 export const login = async (req, res) => {
-    
-        const { email, phoneNumber, password } = req.body;
 
-        const userExists = await User.findOne({
-            $or: [{
-                $and: [
-                    { email: { $exists: true } },
-                    { email: { $ne: null } },
-                    { email: email }
-                ]
-            },
-            { $and: [
+    const { email, phoneNumber, password } = req.body;
+
+    const userExists = await User.findOne({
+        $or: [{
+            $and: [
+                { email: { $exists: true } },
+                { email: { $ne: null } },
+                { email: email }
+            ]
+        },
+        {
+            $and: [
                 { phoneNumber: { $exists: true } },
                 { phoneNumber: { $ne: null } },
                 { phoneNumber: phoneNumber }
-            ] }
-        ]
-        })
-
-        if (!userExists) {
-            throw new Error("Invalid credentials", { cause: 401 });
+            ]
         }
-    
-    if(userExists.isVerified === false){
+        ]
+    })
+
+    if (!userExists) {
+        throw new Error("Invalid credentials", { cause: 401 });
+    }
+
+    if (userExists.isVerified === false) {
         throw new Error("Please verify your email", { cause: 401 });
     }
 
-        const match = comparePassword(password, userExists.password);
+    const match = comparePassword(password, userExists.password);
 
-        if (!match) {
-            throw new Error("Invalid credentials", { cause: 401 });
-        }
+    if (!match) {
+        throw new Error("Invalid credentials", { cause: 401 });
+    }
+
+    if (userExists.deletedAt) {
+        userExists.deletedAt = undefined;
+        userExists.credentialsUpdatedAt = Date.now();
+        await userExists.save();
+    }
     const accessToken = generateToken({ payload: { id: userExists._id, name: userExists.fullName } })
     const refreshToken = generateToken({ payload: { id: userExists._id, name: userExists.fullName }, type: "refresh" }, { expiresIn: "7d" })
 
     await Token.create({ token: refreshToken, userId: userExists._id, type: "refresh" })
     const refreshTokenExpiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
     userExists.refreshToken = refreshToken;
-    userExists.refreshTokenExpiry = refreshTokenExpiry; 
+    userExists.refreshTokenExpiry = refreshTokenExpiry;
     await userExists.save()
 
 
-        return res.status(200).json({ message: "User logged in successfully", success: true, accessToken, refreshToken });
+    return res.status(200).json({ message: "User logged in successfully", success: true, accessToken, refreshToken });
 
 }
 
@@ -212,7 +228,7 @@ export const forgotPassword = async (req, res) => {
         throw new Error("Invalid OTP", { cause: 401 });
     }
 
-    if(userExists.otpExpiry < Date.now()){
+    if (userExists.otpExpiry < Date.now()) {
         throw new Error("OTP expired", { cause: 401 });
     }
 
@@ -220,10 +236,10 @@ export const forgotPassword = async (req, res) => {
     userExists.otp = undefined;
     userExists.otpExpiry = undefined;
     userExists.credentialsUpdatedAt = Date.now();
-    
+
     await userExists.save()
 
-    await Token.deleteMany({userId: userExists._id, type: "refresh"})
+    await Token.deleteMany({ userId: userExists._id, type: "refresh" })
 
     return res.status(201).json({ message: `Password reset successfully`, success: true });
 }
@@ -231,7 +247,7 @@ export const forgotPassword = async (req, res) => {
 export const logout = async (req, res) => {
     const token = req.headers.authorization;
 
-    await Token.create({ token,userId: req.user._id });
-    
+    await Token.create({ token, userId: req.user._id });
+
     return res.status(200).json({ message: "User logged out successfully", success: true });
 }
