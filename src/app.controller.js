@@ -5,9 +5,9 @@ import { rateLimit } from "express-rate-limit";
 import { globalErrorHandler } from "./utils/error/index.js";
 
 export function bootStrap(app, express) {
-    
+
     const limiter = rateLimit({
-        windowMs: 60 * 1000, 
+        windowMs: 60 * 1000,
         max: 5,
         handler: (req, res, next, options) => {
             throw new Error(options.message, { cause: options.statusCode });
@@ -35,7 +35,7 @@ export function bootStrap(app, express) {
     app.use(cors(
         {
             origin: "*"
-                // ["http://localhost:3000", "http://localhost:3001"],
+            // ["http://localhost:3000", "http://localhost:3001"],
         }
     ))
 
@@ -44,11 +44,11 @@ export function bootStrap(app, express) {
     app.use("/message", messageRouter)
 
     app.use("/", (req, res) => {
-        return res.status(200).send({message:"Welcome to Saraha", success:true});
+        return res.status(200).send({ message: "Welcome to Saraha", success: true });
     })
 
     app.use("/{*dummy}", (req, res) => {
-        return res.status(404).send({message:"Not Found", success:false});
+        return res.status(404).send({ message: "Not Found", success: false });
     })
 
 
