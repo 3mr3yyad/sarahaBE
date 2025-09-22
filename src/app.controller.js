@@ -44,11 +44,11 @@ export function bootStrap(app, express) {
     app.use("/message", messageRouter)
 
     app.use("/", (req, res) => {
-        return res.status(200).send({ message: "Welcome to Saraha", success: true });
+        return res.status(200).json({ message: "Welcome to Saraha", success: true });
     })
 
     app.use("/{*dummy}", (req, res) => {
-        return res.status(404).send({ message: "Not Found", success: false });
+        return res.status(404).json({ message: "Not Found", success: false });
     })
 
 

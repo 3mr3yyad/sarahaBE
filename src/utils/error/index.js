@@ -48,16 +48,14 @@ export const globalErrorHandler = async (err, req, res, next) => {
             .json({
                 message: err.message,
                 success: false,
-                stack: err.stack,
-                globalErrorHandler: true
+                
             });
     } catch (error) {
         return res.status(err.cause || 500)
             .json({
                 message: err.message,
                 success: false,
-                stack: err.stack,
-                globalErrorHandler: true
+                
             });
     }
 }
